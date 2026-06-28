@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPORT Fleet - Hệ thống Quản lý Đội xe Container</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- PWA Manifest & Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EPORT Fleet">
+  
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-truck-ramp-box"></i>
+        </div>
+        <span class="brand-text">EPORT Fleet</span>
+      </div>
+      
+      <ul class="nav-menu">
+        <li class="nav-item active" data-tab="dashboard">
+          <a class="nav-link">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Tổng quan</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="trips">
+          <a class="nav-link">
+            <i class="fa-solid fa-route"></i>
+            <span>Điều phối chuyến</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="fleet">
+          <a class="nav-link">
+            <i class="fa-solid fa-truck"></i>
+            <span>Đội xe & Moóc</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="drivers">
+          <a class="nav-link">
+            <i class="fa-solid fa-id-card"></i>
+            <span>Tài xế</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="salary">
+          <a class="nav-link">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Lương & Chi phí</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="fuel">
+          <a class="nav-link">
+            <i class="fa-solid fa-gas-pump"></i>
+            <span>Quản lý Nhiên liệu</span>
+          </a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer" style="position: relative;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
+          <div class="user-avatar">AD</div>
+          <div class="user-info">
+            <span class="user-name">Điều Hành Viên</span>
+            <span class="user-role">Quản trị đội xe</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary" style="padding: 6px; border-radius: 50%; font-size: 14px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" onclick="app.openCloudSettings()" title="Cấu hình Cloud Sync">
+          <i class="fa-solid fa-cloud"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Mobile Top Bar -->
+      <div class="mobile-header">
+        <span class="brand-text" style="font-size: 18px; font-weight: 800; background: linear-gradient(to right, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">EPORT Fleet</span>
+        <button class="btn btn-secondary" style="padding: 6px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" onclick="app.openCloudSettings()" title="Cấu hình Cloud Sync">
+          <i class="fa-solid fa-cloud"></i>
+        </button>
+      </div>
+      
+      <!-- ================= TAB: DASHBOARD ================= -->
+      <section id="dashboard" class="tab-content active">
+        <div class="top-header">
+          <div class="page-title">
+            <h2 id="dashboard-title">Bảng điều khiển</h2>
+            <p>Giám sát tổng quan đội xe vận chuyển container</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="app.refreshDashboard()"><i class="fa-solid fa-rotate"></i> Làm mới</button>
+            <button class="btn btn-primary" onclick="app.openTripModal()"><i class="fa-solid fa-plus"></i> Điều xe nhanh</button>
+          </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+          <div class="card stat-card">
+            <div class="stat-info">
+              <span class="stat-label">Chuyến hôm nay</span>
+              <span class="stat-value" id="stat-active-trips">0</span>
+              <span class="stat-desc" id="stat-trips-desc">0 chuyến đang vận hành</span>
+            </div>
+            <div class="stat-icon icon-blue">
+              <i class="fa-solid fa-route"></i>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-info">
+              <span class="stat-label">Tổng doanh thu</span>
+              <span class="stat-value" id="stat-revenue">0đ</span>
+              <span class="stat-desc" id="stat-revenue-desc">Tháng này</span>
+            </div>
+            <div class="stat-icon icon-emerald">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-info">
+              <span class="stat-label">Tổng chi phí</span>
+              <span class="stat-value" id="stat-costs">0đ</span>
+              <span class="stat-desc decrease" id="stat-costs-desc">Nhiên liệu & BOT</span>
+            </div>
+            <div class="stat-icon icon-amber">
+              <i class="fa-solid fa-gas-pump"></i>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-info">
+              <span class="stat-label">Lợi nhuận ròng</span>
+              <span class="stat-value" id="stat-profit">0đ</span>
+              <span class="stat-desc" id="stat-profit-desc">Sau khi trừ lương tài xế</span>
+            </div>
+            <div class="stat-icon icon-cyan">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Visualizations -->
+        <div class="dashboard-columns">
+          <!-- Column 1: Map and Charts -->
+          <div>
+            <div class="card">
+              <div class="flex-between" style="margin-bottom: 16px;">
+                <h3>Bản đồ giám sát lộ trình vận tải</h3>
+                <span class="badge badge-info"><span class="badge-dot"></span>Mô phỏng GPS thực tế</span>
+              </div>
+              <div class="map-simulation" id="map-simulation">
+                <div class="map-grid"></div>
+                <div class="route-path"></div>
+                <!-- Hub Cát Lái -->
+                <div class="marker-hub" style="top: 70%; left: 20%;" title="Cảng Cát Lái">
+                  <i class="fa-solid fa-anchor"></i>
+                </div>
+                <div class="marker-label" style="top: 78%; left: 16%;">Cảng Cát Lái</div>
+                
+                <!-- Hub Sóng Thần -->
+                <div class="marker-hub" style="top: 20%; left: 45%;" title="ICD Sóng Thần">
+                  <i class="fa-solid fa-warehouse"></i>
+                </div>
+                <div class="marker-label" style="top: 28%; left: 42%;">ICD Sóng Thần</div>
+
+                <!-- Hub Cái Mép -->
+                <div class="marker-hub" style="top: 80%; left: 80%;" title="Cảng Cái Mép">
+                  <i class="fa-solid fa-anchor"></i>
+                </div>
+                <div class="marker-label" style="top: 88%; left: 76%;">Cảng Cái Mép</div>
+
+                <!-- Animated Truck 1 -->
+                <div class="map-marker" style="top: 45%; left: 32%;">
+                  <div class="marker-dot"></div>
+                  <div class="marker-label" id="marker-truck-1">51C-678.90</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Phân tích hiệu quả tài chính các chuyến đi gần đây</h3>
+              <div class="chart-container" style="margin-top: 20px;">
+                <canvas id="financialChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Status & Maintenance -->
+          <div>
+            <div class="card">
+              <h3>Trạng thái Đội xe</h3>
+              <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 16px;">
+                <div class="flex-between">
+                  <span style="font-size: 14px; color: var(--text-secondary);">Đầu kéo hoạt động</span>
+                  <span class="badge badge-success" id="dash-active-tractors">0/0</span>
+                </div>
+                <div class="flex-between">
+                  <span style="font-size: 14px; color: var(--text-secondary);">Đầu kéo đang bảo dưỡng</span>
+                  <span class="badge badge-danger" id="dash-maint-tractors">0/0</span>
+                </div>
+                <div class="flex-between">
+                  <span style="font-size: 14px; color: var(--text-secondary);">Rơ-moóc đang sử dụng</span>
+                  <span class="badge badge-info" id="dash-active-trailers">0/0</span>
+                </div>
+                <div class="flex-between">
+                  <span style="font-size: 14px; color: var(--text-secondary);">Tài xế sẵn sàng</span>
+                  <span class="badge badge-success" id="dash-ready-drivers">0/0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="flex-between" style="margin-bottom: 12px;">
+                <h3>Cảnh báo đăng kiểm</h3>
+                <i class="fa-solid fa-triangle-exclamation text-amber" style="color: var(--accent-amber);"></i>
+              </div>
+              <div id="maintenance-alerts-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- List will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: TRIPS ================= -->
+      <section id="trips" class="tab-content">
+        <div class="top-header">
+          <div class="page-title">
+            <h2>Điều phối Chuyến đi</h2>
+            <p>Lên lịch trình, gán đầu kéo, moóc, tài xế và theo dõi tiến độ</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="app.openTripModal()"><i class="fa-solid fa-plus"></i> Tạo chuyến đi mới</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tab-filters">
+            <button class="filter-btn active" onclick="app.filterTrips('Tất cả', this)">Tất cả</button>
+            <button class="filter-btn" onclick="app.filterTrips('Mới tạo', this)">Mới tạo</button>
+            <button class="filter-btn" onclick="app.filterTrips('Đang chạy', this)">Đang hoạt động</button>
+            <button class="filter-btn" onclick="app.filterTrips('Hoàn thành', this)">Hoàn thành</button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã chuyến</th>
+                  <th>Tài xế</th>
+                  <th>Đầu kéo / Moóc</th>
+                  <th>Lộ trình (Nhận -> Giao -> Trả)</th>
+                  <th>Số Cont / Số Chì</th>
+                  <th>Doanh thu</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="trips-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: FLEET ================= -->
+      <section id="fleet" class="tab-content">
+        <div class="top-header">
+          <div class="page-title">
+            <h2>Quản lý Đội xe & Rơ-moóc</h2>
+            <p>Danh sách đầu kéo, sơ-mi rơ-moóc và thông tin đăng kiểm</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="btn-add-vehicle" onclick="app.openVehicleModal()"><i class="fa-solid fa-plus"></i> Thêm đầu kéo</button>
+          </div>
+        </div>
+
+        <div class="tab-filters" id="fleet-subtabs">
+          <button class="filter-btn active" id="fleet-tab-tractor" onclick="app.switchFleetSubtab('tractor')">Đầu kéo</button>
+          <button class="filter-btn" id="fleet-tab-trailer" onclick="app.switchFleetSubtab('trailer')">Rơ-moóc (Trailer)</button>
+        </div>
+
+        <!-- Tractor Grid Card -->
+        <div class="card" id="tractor-section">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Biển số đầu kéo</th>
+                  <th>Dòng xe / Thương hiệu</th>
+                  <th>Hạn đăng kiểm</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tractors-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Trailer Grid Card -->
+        <div class="card" id="trailer-section" style="display: none;">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Biển số Rơ-moóc</th>
+                  <th>Loại vỏ / Thiết kế</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="trailers-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: DRIVERS ================= -->
+      <section id="drivers" class="tab-content">
+        <div class="top-header">
+          <div class="page-title">
+            <h2>Quản lý Tài xế</h2>
+            <p>Hồ sơ lái xe, liên lạc, bằng lái FC và cơ chế lương chuyến</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="app.openDriverModal()"><i class="fa-solid fa-plus"></i> Thêm tài xế mới</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Họ và Tên</th>
+                  <th>Số điện thoại</th>
+                  <th>Hạng GPLX</th>
+                  <th>Hình thức tính lương</th>
+                  <th>Định mức lương</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="drivers-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: SALARY ================= -->
+      <section id="salary" class="tab-content">
+        <div class="top-header">
+          <div class="page-title">
+            <h2>Lương & Báo cáo chi phí</h2>
+            <p>Tính toán lương chuyến tự động cho tài xế và tổng hợp chi phí vận tải</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="salaryApp.exportSalary()"><i class="fa-solid fa-file-excel"></i> Xuất báo cáo</button>
+          </div>
+        </div>
+
+        <!-- Salary Quick Cards -->
+        <div class="salary-overview">
+          <div class="card stat-card salary-summary-card">
+            <div class="stat-info">
+              <span class="stat-label">Tổng quỹ lương tài xế</span>
+              <span class="stat-value" id="salary-total-pool">0đ</span>
+              <span class="stat-desc">Tổng cộng tất cả các chuyến đã chạy</span>
+            </div>
+            <div class="stat-icon icon-blue">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+          </div>
+          
+          <div class="card stat-card">
+            <div class="stat-info">
+              <span class="stat-label">Chờ thanh toán</span>
+              <span class="stat-value" id="salary-unpaid-pool">0đ</span>
+              <span class="stat-desc" id="salary-unpaid-count">0 tài xế chưa nhận lương</span>
+            </div>
+            <div class="stat-icon icon-amber">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+          </div>
+
+          <div class="card stat-card">
+            <div class="stat-info">
+              <span class="stat-label">Tổng chi phí dầu (Fuel)</span>
+              <span class="stat-value" id="cost-total-fuel">0đ</span>
+              <span class="stat-desc">Chiếm phần lớn chi phí vận hành</span>
+            </div>
+            <div class="stat-icon icon-cyan">
+              <i class="fa-solid fa-gas-pump"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Bảng đối soát lương tài xế theo chuyến</h3>
+          <div style="margin-top: 16px;" class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tài xế</th>
+                  <th>Mã Chuyến</th>
+                  <th>Lộ trình</th>
+                  <th>Doanh thu chuyến</th>
+                  <th>Cơ chế lương chuyến</th>
+                  <th>Lương thực nhận</th>
+                  <th>Ngày hoàn thành</th>
+                  <th>Thanh toán</th>
+                  <th style="text-align: right;">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="salary-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: FUEL ================= -->
+      <section id="fuel" class="tab-content">
+        <div class="top-header">
+          <div class="page-title">
+            <h2>Quản lý Nhiên liệu (Xuất/Nhập Dầu)</h2>
+            <p>Giám sát bồn chứa, cấp phát dầu xe và quản lý nhập bồn nội bộ</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="fuelApp.openPriceModal()"><i class="fa-solid fa-tags"></i> Cập nhật giá dầu</button>
+            <button class="btn btn-secondary" onclick="fuelApp.openImportModal()"><i class="fa-solid fa-truck-field"></i> Nhập bồn chứa</button>
+            <button class="btn btn-primary" onclick="fuelApp.openDispenseModal()"><i class="fa-solid fa-gas-pump"></i> Đổ dầu cho xe</button>
+          </div>
+        </div>
+
+        <!-- Tank Visual status widget -->
+        <div class="card" style="display: grid; grid-template-columns: 1fr 2fr; gap: 32px; align-items: center;">
+          <!-- Tank graphics -->
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+            <div style="width: 140px; height: 180px; border: 4px solid var(--border-color); border-radius: 20px; position: relative; overflow: hidden; background: rgba(255,255,255,0.01); display: flex; align-items: flex-end;">
+              <div id="tank-progress-bar" style="width: 100%; height: 80%; background: linear-gradient(to top, var(--accent-cyan), #06b6d4); transition: all 1s ease-in-out; position: relative;">
+                <!-- Simulated liquid wave -->
+                <div style="position: absolute; top: -10px; left: 0; width: 100%; height: 20px; background: rgba(255,255,255,0.2); border-radius: 50%; filter: blur(2px); animation: waveAnim 3s infinite alternate;"></div>
+              </div>
+            </div>
+            <div id="tank-percent-display" style="font-size: 18px; font-weight: bold; margin-top: 12px; color: #fff;">0% thể tích</div>
+          </div>
+          <!-- Tank Stats -->
+          <div>
+            <h3 style="margin-bottom: 16px; font-size: 22px;">Trạng thái Bồn chứa dầu chính (20k Lít)</h3>
+            <div style="font-size: 36px; font-weight: 800; color: var(--accent-cyan);" id="tank-liters-display">0 Lít</div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px;" id="tank-mm-display">Chiều cao đo bồn: 0 mm</div>
+            
+            <div class="stat-grid" style="margin-top: 24px; margin-bottom: 0;">
+              <div class="card stat-card" style="background: rgba(255,255,255,0.02); padding: 12px 16px; margin-bottom: 0;">
+                <div class="stat-info">
+                  <span class="stat-label" style="font-size: 11px;">Đã cấp phát (Tháng này)</span>
+                  <span class="stat-value" style="font-size: 18px;" id="stat-month-dispensed">0 Lít</span>
+                </div>
+              </div>
+              <div class="card stat-card" style="background: rgba(255,255,255,0.02); padding: 12px 16px; margin-bottom: 0;">
+                <div class="stat-info">
+                  <span class="stat-label" style="font-size: 11px;">Đã nhập bồn (Tháng này)</span>
+                  <span class="stat-value" style="font-size: 18px;" id="stat-month-imported">0 Lít</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tab-filters" id="fuel-subtabs">
+            <button class="filter-btn active" data-subtab="dispense">Nhật ký đổ dầu (Xe)</button>
+            <button class="filter-btn" data-subtab="import">Lịch sử nhập bồn</button>
+            <button class="filter-btn" data-subtab="price">Giá dầu chu kỳ</button>
+            <button class="filter-btn" data-subtab="search">Thước đo ➡ Lít bồn</button>
+          </div>
+
+          <!-- Subtab 1: Dispense table -->
+          <div id="fuel-dispense-section" class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Biển số xe</th>
+                  <th>Lít dầu cấp</th>
+                  <th>Đơn giá</th>
+                  <th>Thành tiền</th>
+                  <th>Đo bồn (mm)</th>
+                  <th>Còn lại bồn (Lít)</th>
+                  <th>Ghi chú</th>
+                  <th style="text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="fuel-dispense-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Subtab 2: Import table -->
+          <div id="fuel-import-section" class="table-container" style="display: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thời gian nhập</th>
+                  <th>Trước nạp (mm ➡ Lít)</th>
+                  <th>Sau nạp (mm ➡ Lít)</th>
+                  <th>Mua thực tế (Hóa đơn)</th>
+                  <th>Hao hụt / Chênh lệch</th>
+                  <th>Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody id="fuel-import-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Subtab 3: Price table -->
+          <div id="fuel-price-section" class="table-container" style="display: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Từ ngày</th>
+                  <th>Đến ngày</th>
+                  <th>Đơn giá (VND/Lít)</th>
+                </tr>
+              </thead>
+              <tbody id="fuel-price-table-body">
+                <!-- Populate dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Subtab 4: Calibration lookup tool -->
+          <div id="fuel-lookup-section" style="display: none;">
+            <!-- Render search box dynamically -->
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. VEHICLE MODAL (Tractor or Trailer) -->
+  <div class="modal-backdrop" id="vehicle-modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="vehicle-modal-title">Thêm Đầu Kéo</h3>
+        <button class="close-modal" onclick="app.closeVehicleModal()">&times;</button>
+      </div>
+      <form id="vehicle-form" onsubmit="app.handleVehicleSubmit(event)">
+        <input type="hidden" id="vehicle-id">
+        <input type="hidden" id="vehicle-mode" value="tractor"> <!-- tractor or trailer -->
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="vehicle-plate">Biển số xe *</label>
+            <input type="text" id="vehicle-plate" class="form-control" placeholder="Ví dụ: 51C-123.45" required>
+          </div>
+          
+          <!-- Tractor-only fields -->
+          <div class="form-group" id="tractor-fields">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vehicle-brand">Thương hiệu / Dòng xe</label>
+                <input type="text" id="vehicle-brand" class="form-control" placeholder="Hyundai, Howo, Chenglong...">
+              </div>
+              <div class="form-group">
+                <label for="vehicle-reg">Hạn đăng kiểm</label>
+                <input type="date" id="vehicle-reg" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <!-- Trailer-only fields -->
+          <div class="form-group" id="trailer-fields" style="display: none;">
+            <label for="vehicle-type">Loại Rơ-moóc</label>
+            <select id="vehicle-type" class="form-control">
+              <option value="Moóc Xương 40ft">Moóc Xương 40ft</option>
+              <option value="Moóc Sàn 40ft">Moóc Sàn 40ft</option>
+              <option value="Moóc Xương 20ft">Moóc Xương 20ft</option>
+              <option value="Moóc Sàn 20ft">Moóc Sàn 20ft</option>
+              <option value="Moóc Lùn / Siêu trường">Moóc Lùn / Siêu trường</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="vehicle-status">Trạng thái vận hành</label>
+            <select id="vehicle-status" class="form-control">
+              <option value="Sẵn sàng">Sẵn sàng</option>
+              <option value="Đang chạy">Đang chạy</option>
+              <option value="Bảo dưỡng">Bảo dưỡng</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeVehicleModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. DRIVER MODAL -->
+  <div class="modal-backdrop" id="driver-modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="driver-modal-title">Thêm Tài Xế Mới</h3>
+        <button class="close-modal" onclick="app.closeDriverModal()">&times;</button>
+      </div>
+      <form id="driver-form" onsubmit="app.handleDriverSubmit(event)">
+        <input type="hidden" id="driver-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="driver-name">Họ và tên tài xế *</label>
+            <input type="text" id="driver-name" class="form-control" placeholder="Nhập tên đầy đủ" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="driver-phone">Số điện thoại *</label>
+              <input type="tel" id="driver-phone" class="form-control" placeholder="Số di động liên hệ" required>
+            </div>
+            <div class="form-group">
+              <label for="driver-license">Hạng giấy phép lái xe</label>
+              <select id="driver-license" class="form-control">
+                <option value="FC">Hạng FC (Bắt buộc cho xe Container)</option>
+                <option value="C">Hạng C (Chỉ lái xe tải thẳng)</option>
+                <option value="D/E">Hạng D / E</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="salary-config-box">
+            <label style="font-weight: 600; color: #fff; margin-bottom: 12px; display: block;">Thiết lập Lương Chuyến</label>
+            
+            <div class="form-group">
+              <label for="driver-salary-type">Hình thức tính lương chuyến *</label>
+              <select id="driver-salary-type" class="form-control" onchange="app.toggleSalaryRateLabel(this.value)">
+                <option value="fixed_per_trip">Nhận tiền cố định mỗi chuyến (VND/Chuyến)</option>
+                <option value="trip_percentage">Nhận theo % doanh thu cước chuyến đi (%)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label id="salary-rate-label" for="driver-salary-rate">Định mức chi trả (VND/chuyến) *</label>
+              <input type="number" id="driver-salary-rate" class="form-control" required placeholder="Ví dụ: 500000" min="0">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label for="driver-status">Trạng thái công tác</label>
+            <select id="driver-status" class="form-control">
+              <option value="Sẵn sàng">Sẵn sàng</option>
+              <option value="Đang chạy">Đang chạy</option>
+              <option value="Xin nghỉ">Xin nghỉ</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeDriverModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. TRIP MODAL (DISPATCHING) -->
+  <div class="modal-backdrop" id="trip-modal-backdrop">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 id="trip-modal-title">Điều Phối Chuyến Đi Mới</h3>
+        <button class="close-modal" onclick="app.closeTripModal()">&times;</button>
+      </div>
+      <form id="trip-form" onsubmit="app.handleTripSubmit(event)">
+        <input type="hidden" id="trip-id">
+        <div class="modal-body">
+          
+          <h4 style="color: #fff; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">1. Thông tin Lộ trình & Container</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="trip-pickup">Điểm lấy hàng/lấy cont *</label>
+              <input type="text" id="trip-pickup" class="form-control" placeholder="Ví dụ: Cảng Cát Lái, Cảng Cái Mép..." required>
+            </div>
+            <div class="form-group">
+              <label for="trip-delivery">Điểm giao hàng *</label>
+              <input type="text" id="trip-delivery" class="form-control" placeholder="Ví dụ: Kho ICD Sóng Thần, KCN VSIP..." required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="trip-return">Điểm trả vỏ cont rỗng *</label>
+              <input type="text" id="trip-return" class="form-control" placeholder="Ví dụ: Depot Cát Lái, Kho Tân Vạn..." required>
+            </div>
+            <div class="form-group">
+              <label for="trip-date">Ngày vận chuyển *</label>
+              <input type="date" id="trip-date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="trip-cont-no">Số Container</label>
+              <input type="text" id="trip-cont-no" class="form-control" placeholder="Ví dụ: MSKU9988776">
+            </div>
+            <div class="form-group">
+              <label for="trip-seal-no">Số Chì (Seal)</label>
+              <input type="text" id="trip-seal-no" class="form-control" placeholder="Ví dụ: SL-12345">
+            </div>
+          </div>
+
+          <h4 style="color: #fff; margin-top: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">2. Phân bổ Nguồn lực vận tải</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="trip-driver">Gán Tài xế thực hiện *</label>
+              <select id="trip-driver" class="form-control" required onchange="app.handleTripDriverChange(this.value)">
+                <option value="">-- Chọn tài xế --</option>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="trip-tractor">Gán Đầu kéo vận chuyển *</label>
+              <select id="trip-tractor" class="form-control" required>
+                <option value="">-- Chọn đầu kéo --</option>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="trip-trailer">Gán Sơ-mi Rơ-moóc *</label>
+            <select id="trip-trailer" class="form-control" required>
+              <option value="">-- Chọn rơ-moóc --</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <h4 style="color: #fff; margin-top: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">3. Tài chính Chuyến đi (Doanh thu & Chi phí)</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="trip-revenue">Doanh thu cước chuyến (VND) *</label>
+              <input type="number" id="trip-revenue" class="form-control" placeholder="Cước vận chuyển trả bởi chủ hàng" required min="0" oninput="app.calculateDynamicSalary()">
+            </div>
+            <div class="form-group">
+              <label for="trip-salary-preview">Lương dự tính của tài xế (VND)</label>
+              <input type="text" id="trip-salary-preview" class="form-control" style="background: rgba(255,255,255,0.01); color: var(--accent-cyan); font-weight: bold;" readonly value="0đ">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cost-fuel">Chi phí dầu (VND)</label>
+              <input type="number" id="cost-fuel" class="form-control" placeholder="Ví dụ: 1200000" min="0">
+            </div>
+            <div class="form-group">
+              <label for="cost-bot">Phí cầu đường BOT / Vé Cảng (VND)</label>
+              <input type="number" id="cost-bot" class="form-control" placeholder="Ví dụ: 300000" min="0">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cost-allowance">Tiền ăn/Bồi dưỡng dọc đường (VND)</label>
+              <input type="number" id="cost-allowance" class="form-control" placeholder="Bồi dưỡng trực tiếp tài xế" min="0">
+            </div>
+            <div class="form-group">
+              <label for="cost-others">Chi phí khác (Sửa chữa, phạt...) (VND)</label>
+              <input type="number" id="cost-others" class="form-control" placeholder="Phát sinh nếu có" min="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="trip-status">Trạng thái Chuyến đi</label>
+            <select id="trip-status" class="form-control">
+              <option value="Mới tạo">Mới tạo (Chờ tài xế xác nhận)</option>
+              <option value="Đang chạy">Đang chạy (Đang đi nhận hàng/giao hàng)</option>
+              <option value="Hoàn thành">Hoàn thành (Đã trả cont rỗng & xong chuyến)</option>
+            </select>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeTripModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu lệnh điều xe</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. FUEL DISPENSE MODAL -->
+  <div class="modal-backdrop" id="fuel-dispense-modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Cấp Phát Đổ Dầu Cho Xe</h3>
+        <button class="close-modal" onclick="fuelApp.closeDispenseModal()">&times;</button>
+      </div>
+      <form id="fuel-dispense-form" onsubmit="fuelApp.handleDispenseSubmit(event)">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fd-date">Ngày đổ dầu *</label>
+              <input type="date" id="fd-date" class="form-control" required onchange="fuelApp.handleDispenseDateChange(this.value)">
+            </div>
+            <div class="form-group">
+              <label for="fd-plate">Chọn biển số xe *</label>
+              <select id="fd-plate" class="form-control" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fd-liters">Số lượng cấp (Lít) *</label>
+              <input type="number" id="fd-liters" class="form-control" placeholder="Số lít đổ xe" required min="1" oninput="fuelApp.calculateDispenseTotal()">
+            </div>
+            <div class="form-group">
+              <label for="fd-price">Đơn giá dầu (VND/Lít)</label>
+              <input type="number" id="fd-price" class="form-control" readonly style="background: rgba(255,255,255,0.02); color: var(--accent-emerald); font-weight: bold;">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fd-total">Thành tiền (VND)</label>
+              <input type="number" id="fd-total" class="form-control" readonly style="background: rgba(255,255,255,0.02); color: var(--accent-cyan); font-weight: bold;">
+            </div>
+            <div class="form-group">
+              <label for="fd-mm">Chiều cao đo bồn sau bơm (mm)</label>
+              <input type="number" id="fd-mm" class="form-control" placeholder="Đo thước mm (tùy chọn)" oninput="fuelApp.handleDispenseMmChange(this.value)">
+            </div>
+          </div>
+          
+          <div style="font-size: 12px; color: var(--accent-cyan); margin-bottom: 12px; text-align: right;" id="fd-tank-liters-preview"></div>
+
+          <div class="form-group">
+            <label for="fd-note">Ghi chú</label>
+            <input type="text" id="fd-note" class="form-control" placeholder="Ghi chú người bơm/cột bơm nếu có">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fuelApp.closeDispenseModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Xác nhận cấp dầu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. FUEL REFILL MODAL (IMPORT) -->
+  <div class="modal-backdrop" id="fuel-import-modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Nhập Dầu Vào Bồn Chứa</h3>
+        <button class="close-modal" onclick="fuelApp.closeImportModal()">&times;</button>
+      </div>
+      <form id="fuel-import-form" onsubmit="fuelApp.handleImportSubmit(event)">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fi-date">Thời gian nạp *</label>
+              <input type="datetime-local" id="fi-date" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="fi-liters">Số lượng mua thực tế (Lít) *</label>
+              <input type="number" id="fi-liters" class="form-control" placeholder="Theo hóa đơn xe bồn" required min="1" oninput="fuelApp.handleImportMmChange()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fi-old-mm">Số đo bồn TRƯỚC nạp (mm) *</label>
+              <input type="number" id="fi-old-mm" class="form-control" placeholder="Đo thước mm trước nạp" required min="0" oninput="fuelApp.handleImportMmChange()">
+              <small style="color: var(--accent-cyan);" id="fi-old-liters-preview">0 Lít</small>
+            </div>
+            <div class="form-group">
+              <label for="fi-new-mm">Số đo bồn SAU nạp (mm) *</label>
+              <input type="number" id="fi-new-mm" class="form-control" placeholder="Đo thước mm sau nạp" required min="0" oninput="fuelApp.handleImportMmChange()">
+              <small style="color: var(--accent-cyan);" id="fi-new-liters-preview">0 Lít</small>
+            </div>
+          </div>
+
+          <div class="salary-config-box" style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: var(--text-secondary);">Hao hụt chênh lệch tính toán:</span>
+            <span id="fi-variance-preview" style="font-size: 18px; font-weight: bold; color: #fff;">0 Lít</span>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label for="fi-note">Ghi chú</label>
+            <input type="text" id="fi-note" class="form-control" placeholder="Ví dụ: Xe bồn số 51C-xxx...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fuelApp.closeImportModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Xác nhận nạp bồn</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. FUEL PRICE CHANGE MODAL -->
+  <div class="modal-backdrop" id="fuel-price-modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Điều Chỉnh Giá Dầu Chu Kỳ Mới</h3>
+        <button class="close-modal" onclick="fuelApp.closePriceModal()">&times;</button>
+      </div>
+      <form id="fuel-price-form" onsubmit="fuelApp.handlePriceSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="fp-from">Ngày áp dụng giá mới *</label>
+            <input type="date" id="fp-from" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="fp-price">Đơn giá mới (VND/Lít) *</label>
+            <input type="number" id="fp-price" class="form-control" placeholder="Ví dụ: 18500" required min="1000">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fuelApp.closePriceModal()">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu giá mới</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. CLOUD CONFIGURATION MODAL -->
+  <div class="modal-backdrop" id="cloud-modal-backdrop">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Thiết lập Đồng Bộ Đám Mây (Cloud Sync)</h3>
+        <button class="close-modal" onclick="app.closeCloudSettings()">&times;</button>
+      </div>
+      <form id="cloud-form" onsubmit="app.handleCloudSubmit(event)">
+        <div class="modal-body">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 48px; color: var(--accent-cyan);"></i>
+            <h4 style="margin-top: 12px; color: #fff;">Đồng bộ dữ liệu Real-time đa thiết bị</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
+              Dữ liệu sẽ được lưu trên đám mây của bạn (Google Firebase), cho phép mở ứng dụng ở nhà, công ty hay điện thoại và đồng bộ ngay lập tức.
+            </p>
+          </div>
+
+          <div class="salary-config-box" style="margin-bottom: 20px; background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+            <div class="flex-between">
+              <span style="font-weight: 600; color: #fff;">Trạng thái kết nối:</span>
+              <span id="cloud-status-badge" class="badge badge-warning"><span class="badge-dot"></span>Chưa kết nối Cloud</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="cloud-config-input">Dán mã cấu hình Firebase Config *</label>
+            <textarea id="cloud-config-input" class="form-control" rows="8" placeholder='Ví dụ:
+{
+  "apiKey": "AIzaSy...",
+  "authDomain": "eport-fleet.firebaseapp.com",
+  "projectId": "eport-fleet",
+  "storageBucket": "eport-fleet.appspot.com",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' required></textarea>
+            <small style="color: var(--text-muted); display: block; margin-top: 6px; font-size: 11px;">
+              * Hướng dẫn: Đăng nhập Firebase Console -> Tạo Project -> Tạo Web App -> Sao chép đối tượng firebaseConfig và dán vào đây.
+            </small>
+          </div>
+
+          <div id="cloud-sync-actions" style="display: none; margin-top: 16px;">
+            <button type="button" class="btn btn-secondary" style="width: 100%; border-color: rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-weight: bold;" onclick="app.uploadLocalDataToCloud()">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Tải dữ liệu Excel hiện tại lên Cloud
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="app.closeCloudSettings()">Hủy</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-cloud">Kết nối & Đồng bộ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase compatibility SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- JavaScript Modules -->
+  <script src="js/imported_data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/chart-config.js"></script>
+  <script src="js/salary.js"></script>
+  <script src="js/fuel.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Service Worker Registration for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker: Registered successfully with scope:', reg.scope))
+          .catch(err => console.log('Service Worker: Registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

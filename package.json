@@ -1,0 +1,14 @@
+{
+  "name": "eport-fleet-management",
+  "version": "1.0.0",
+  "description": "Hệ thống quản lý đội xe container EPORT Fleet",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "EPORT Fleet Management",
+  "short_name": "EPORT Fleet",
+  "description": "Hệ thống quản lý đội xe container và nhiên liệu EPORT",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
